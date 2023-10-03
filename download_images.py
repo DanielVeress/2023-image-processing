@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import cv2 
 
-from constants import IMAGE_DIR, DATABASE_FILE, PROCESSED_DATABASE_FILE
+from utils.constants import IMAGE_DIR, LP_IMAGE_DIR, DATABASE_FILE, PROCESSED_DATABASE_FILE
 
 
 def read_image_from_url(url, verbose=0):
@@ -17,15 +17,19 @@ def read_image_from_url(url, verbose=0):
     arr = np.asarray(bytearray(urlopen(req).read()), dtype=np.uint8)
     img = cv2.imdecode(arr, -1)
 
-    if verbose:
-        print(f'Got: {url}')
+    if verbose: print(f'Got: {url}')
     return img
 
 
 if __name__ == '__main__':
+    if not os.path.exists(IMAGE_DIR): os.mkdir(IMAGE_DIR)
+    if not os.path.exists(LP_IMAGE_DIR): os.mkdir(LP_IMAGE_DIR)
+
     df = pd.read_csv(DATABASE_FILE)
 
     for idx, row in df.iterrows():
+        if idx % 200 == 0: print(f'{idx} downloaded')
+
         url = row['Image']
         file_name = url.split('/')[-1]
 
@@ -33,7 +37,7 @@ if __name__ == '__main__':
             if url.find('https') == -1:
                 url = url.replace('http', 'https')
 
-            img = read_image_from_url(url, verbose=1)
+            img = read_image_from_url(url)
 
             path = f'{IMAGE_DIR}/{file_name}'
             cv2.imwrite(path, img)
