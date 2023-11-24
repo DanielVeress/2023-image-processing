@@ -1,7 +1,8 @@
+import os
 import statistics
 import cv2
-import numpy as np
 from matplotlib import pyplot as plt
+from utils.constants import ORIENTED_IMAGE_DIR, SEGMENTED_LP_DIR
 
 
 def segment_characters(license_plate_image):
@@ -49,7 +50,12 @@ def segment_characters(license_plate_image):
         lower_bound = most_common_height - acceptable_error*most_common_height
         upper_bound = most_common_height + acceptable_error*most_common_height
         if (lower_bound < segment.shape[0] and segment.shape[0] < upper_bound):
-            characters.append(segment)
+            gray_char = cv2.cvtColor(segment, cv2.COLOR_BGR2GRAY)
+            se = cv2.getStructuringElement(cv2.MORPH_RECT , (8,8))
+            bg = cv2.morphologyEx(gray_char, cv2.MORPH_DILATE, se)
+            out_gray = cv2.divide(gray_char, bg, scale=255)
+            out_binary = cv2.threshold(out_gray, 0, 255, cv2.THRESH_OTSU )[1] 
+            characters.append(out_binary)
     if len(characters) == 0: return None
         
     return characters
@@ -61,19 +67,30 @@ def aspect_ratio(contour):
 
 
 if __name__ == '__main__':
-    license_plate_image = cv2.imread('data/oriented/18152279.jpg')#17548853, 17558046, 17560430, 18068110, 18142603
+    input_dir = ORIENTED_IMAGE_DIR
+    output_dir = SEGMENTED_LP_DIR
 
-    segmented_characters = segment_characters(license_plate_image)
+    os.makedirs(output_dir, exist_ok=True)
 
-    if segmented_characters is not None:
-        plt.figure(figsize=(10, 5))
-        for i, char in enumerate(segmented_characters):
-            plt.subplot(1, len(segmented_characters), i + 1)
-            plt.imshow(cv2.cvtColor(char, cv2.COLOR_BGR2RGB))
-            plt.axis('off')
-        plt.show()
+    not_found = 0
+    for idx, filename in zip(range(len(os.listdir(input_dir))), os.listdir(input_dir)):
+        if idx % 200 == 0: print(f'{idx} processed')
+        
+        if filename.endswith(".jpg") or filename.endswith(".png"):
+            file_path = os.path.join(input_dir, filename)
+            license_plate_image = cv2.imread(file_path)
 
-    if segmented_characters is None:
-        print('License plate was not found!')
-    elif len(segmented_characters) < 6:
-        print('Not enough characters were found!')
+            segmented_characters = segment_characters(license_plate_image)
+
+            # save segments
+            if segmented_characters is not None:
+                file_id = filename.split('.')[0]
+                file_segment_path = os.path.join(output_dir, file_id)
+                os.makedirs(file_segment_path, exist_ok=True)
+                
+                for idx, character in zip(range(len(segmented_characters)), segmented_characters):
+                    cv2.imwrite(file_segment_path+f'/{file_id}_{idx}.jpg', character)
+            else:
+                not_found += 1
+    
+    print(f'For {not_found} images, no segments were found.')

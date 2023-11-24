@@ -7,3 +7,5 @@ IMAGE_DIR = 'data/full_images'
 LP_IMAGE_DIR = 'data/license_plate_images'
 
 ORIENTED_IMAGE_DIR = 'data/oriented'
+
+SEGMENTED_LP_DIR = 'data/license_plate_segments'
