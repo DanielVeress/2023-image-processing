@@ -9,3 +9,5 @@ LP_IMAGE_DIR = 'data/license_plate_images'
 ORIENTED_IMAGE_DIR = 'data/oriented'
 
 SEGMENTED_LP_DIR = 'data/license_plate_segments'
+
+MAX_SEGMENTED_CHAR_WIDTH = 96
