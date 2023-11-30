@@ -28,7 +28,7 @@ def has_enough_black_pixels(image, threshold):
 
     return black_ratio <= threshold 
 
-def has_too_much_blue(image, blue_threshold=1.28, red_threshold=0.7, green_threshold=0.7):
+def has_too_much_blue(image, blue_threshold=1.15, red_threshold=0.7, green_threshold=0.7):
     blue, green, red = cv2.split(image)
 
     mean_blue = np.mean(blue)
@@ -68,7 +68,7 @@ def is_mostly_black(image, black_threshold=30):
 def colorFilter(image, black_threshold=30):
     return is_mostly_black(image, black_threshold) or has_too_much_blue(image) or has_too_much_red(image)
 
-def is_right_size(image, aspect_ratio_threshold=1.2):
+def is_right_size(image, aspect_ratio_threshold=1.0):
     global not_found
     
     height, width, _ = image.shape
@@ -110,8 +110,6 @@ def process_license_plate(image, output_directory):
         max_contour = max(valid_contours, key=cv2.contourArea)
         
         rect = cv2.minAreaRect(max_contour)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
 
         width, height = rect[1]
         orientation = rect[2]
