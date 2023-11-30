@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
 import torch
 from torch import nn, optim
 
@@ -94,6 +95,12 @@ def do_evaluation():
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True, num_workers=2)
 
+    df_evaluation = pd.DataFrame(columns=['Image', 'Plate number', 'Predicted plate number'])
+    df_cvs = pd.read_csv(csv_path, header=0)
+    df_evaluation['Image'] = df_cvs['Image']
+    df_evaluation['Plate number'] = df_cvs['Plate number'].apply(
+        lambda x: ''.join(filter(lambda char: char != " " and char != "-", x)))
+
     # Evaluate
     correct = 0
     total = 0
@@ -102,7 +109,16 @@ def do_evaluation():
 
             images = images.squeeze(0)
             labels = labels.squeeze(0)
+
+            string_label = ""
+            for i in range(labels.shape[0]):
+                _, index = torch.max(labels[i].data, 1)
+                string_label += ImageDataset.index_to_char[int(index)]
+
+            row_index = df_evaluation[df_evaluation['Plate number'] == string_label].index[0]
+
             wrong_prediction = False
+            prediction_string = ""
             for input_iter, label_iter in zip(images, labels):
                 input_tensor = input_iter.to(device)
                 label_tensor = label_iter.to(device)
@@ -113,15 +129,18 @@ def do_evaluation():
 
                 # the class with the highest energy is what we choose as prediction
                 _, predicted = torch.max(outputs.data, 1)
+                prediction_string += ImageDataset.index_to_char[int(predicted)]
 
                 if predicted != max_label:
                     wrong_prediction = True
-                    break
 
+            df_evaluation.loc[row_index, 'Predicted plate number'] = prediction_string
             total += 1
             correct += 1 if not wrong_prediction else 0
 
     print(f'Accuracy of the network on the {total} test images: {100 * correct // total} %')
+    df_evaluation.to_csv('evaluation.csv', index=True)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -131,6 +150,7 @@ def parse_args():
     parser.add_argument("--csv_path", type=str, default="")
     parser.add_argument("--dataset_path", type=str, default="")
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     # Select cuda device if available

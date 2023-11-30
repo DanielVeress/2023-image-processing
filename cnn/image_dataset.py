@@ -16,6 +16,8 @@ class ImageDataset(Dataset):
                      'J': 19, 'K': 20, 'L': 21, 'M': 22, 'N': 23, 'O': 24, 'P': 25, 'Q': 26, 'R': 27,
                      'S': 28, 'T': 29, 'U': 30, 'V': 31, 'W': 32, 'X': 33, 'Y': 34, 'Z': 35}
 
+    index_to_char = {v: k for k, v in char_to_index.items()}
+
     def __init__(self, csv_file, data_path):
         self.data_path = data_path
         self.df = pd.read_csv(csv_file, header=0)
